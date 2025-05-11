@@ -1,0 +1,65 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: Build
+  displayName: 'Build'
+  jobs:
+  - job: Build
+    displayName: 'Build'
+    steps:
+    - task: TerraformInstaller@1
+      displayName: Terraform installer
+      inputs:
+        terraformVersion: 'latest'
+    - task: TerraformTaskV4@4
+      displayName: Terraform Init
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Real-Time-Infrastructure-as-Code-IaC-with-Terraform-on-Azure'
+        backendServiceArm: 'Pay-As-You-Go(4)(f2e0a72a-bb8f-47bf-946a-c0d4b739dff8)'
+        backendAzureRmResourceGroupName: 'appgrp-RG'
+        backendAzureRmStorageAccountName: 'narstoracctn001'
+        backendAzureRmContainerName: 'tata-container'
+        backendAzureRmKey: 'terraform.tfstate'
+
+    - task: TerraformTaskV4@4
+      displayName: Terraform Validate
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Real-Time-Infrastructure-as-Code-IaC-with-Terraform-on-Azure'
+    
+    - task: TerraformTaskV4@4
+      displayName: Terraform format
+      inputs:
+        provider: 'azurerm'
+        command: 'custom'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Real-Time-Infrastructure-as-Code-IaC-with-Terraform-on-Azure'
+        outputTo: 'console'
+        customCommand: 'fmt'
+        environmentServiceNameAzureRM: 'Pay-As-You-Go(5)(f2e0a72a-bb8f-47bf-946a-c0d4b739dff8)'
+    
+    - task: TerraformTaskV4@4
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/Real-Time-Infrastructure-as-Code-IaC-with-Terraform-on-Azure'
+        commandOptions: '-out=tfplan'
+        environmentServiceNameAzureRM: 'Pay-As-You-Go(6)(f2e0a72a-bb8f-47bf-946a-c0d4b739dff8)'
+    - task: CopyFiles@2
+      displayName: Copy files
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: '**'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+        OverWrite: true
